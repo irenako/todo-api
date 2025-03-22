@@ -3,17 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CreateTaskRequest;
+use App\Http\Requests\GetTasksRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
 use App\Models\User;
 use App\TaskStatus;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class TaskController extends Controller
 {
-    public function index(string $userId)
+    public function index(string $userId, GetTasksRequest $request)
     {
         $user = User::find($userId);
 
@@ -21,7 +21,15 @@ class TaskController extends Controller
             return response()->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return TaskResource::collection($user->tasks);
+        $perPage = $request->get('per_page', 10);
+        $sortBy = $request->get('sort_by', 'status');
+        $sortOrder = $request->get('sort_order', 'asc');
+
+        return TaskResource::collection(
+            $user->tasks()
+                ->orderBy($sortBy, $sortOrder)
+                ->paginate($perPage)
+        );
     }
 
     public function store(string $userId, CreateTaskRequest $request)
@@ -91,7 +99,7 @@ class TaskController extends Controller
 
         if (!$user) {
             return response()->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
-        }   
+        }
 
         $user->tasks()->where('status', TaskStatus::NEW->value)->delete();
 

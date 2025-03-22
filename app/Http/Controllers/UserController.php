@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CreateUserRequest;
+use App\Http\Requests\GetUsersRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
@@ -11,9 +12,16 @@ use Illuminate\Http\Response;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(GetUsersRequest $request)
     {
-        return UserResource::collection(User::all());
+        $perPage = $request->get('per_page', 10);
+        $sortBy = $request->get('sort_by', 'first_name');
+        $sortOrder = $request->get('sort_order', 'asc');
+
+        return UserResource::collection(
+            User::orderBy($sortBy, $sortOrder)
+                ->paginate($perPage)
+        );
     }
 
     public function store(CreateUserRequest $request)
